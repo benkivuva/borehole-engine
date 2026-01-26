@@ -21,35 +21,35 @@ func NewEngine() Vectorizer {
 	return &Engine{}
 }
 
-// featureCount is the number of features in the output vector.
-const featureCount = 22
+const (
+	FeatureTotalIncome       = 0
+	FeatureTotalExpenses     = 1
+	FeatureNetFlow           = 2
+	FeatureAvgTxnAmount      = 3
+	FeatureTxnCount          = 4
+	FeatureIncomeRegularity  = 5
+	FeatureGamblingIndex     = 6
+	FeatureUtilityRatio      = 7
+	FeatureFulizaUsage       = 8
+	FeatureFulizaRepayRate   = 9
+	FeatureP2PRatio          = 10
+	FeatureMaxSingleTxn      = 11
+	FeatureBalanceVolatility = 12
+	FeatureDaysActive        = 13
+	FeatureAvgDailyVolume    = 14
+	FeatureHustlerBalance    = 15
+	FeatureOkoaFrequency     = 16
+	FeatureAirtelVolume      = 17
+	FeatureLenderDiversity   = 18
+	FeatureEmergencyReliance = 19
+	FeatureSavingsRate       = 20
+	FeatureBankActivity      = 21
+
+	featureCount = 22
+)
 
 // Vectorize transforms transactions into a 22-element feature vector.
 // Features are deterministic for XGBoost reproducibility.
-//
-// Feature indices:
-//   - 0: total_income         - Sum of all received amounts
-//   - 1: total_expenses       - Sum of all sent/paid amounts
-//   - 2: net_flow             - income - expenses
-//   - 3: avg_txn_amount       - Mean transaction value
-//   - 4: txn_count            - Total transaction count
-//   - 5: income_regularity    - Coefficient of variation for income
-//   - 6: gambling_index       - Gambling spend / total expenses
-//   - 7: utility_ratio        - Utility payments / total expenses
-//   - 8: fuliza_usage         - Fuliza borrowed / total income
-//   - 9: fuliza_repay_rate    - Fuliza repaid / Fuliza borrowed
-//   - 10: p2p_ratio           - P2P sends / total expenses
-//   - 11: max_single_txn      - Largest single transaction
-//   - 12: balance_volatility  - Std dev of transaction amounts
-//   - 13: days_active         - Unique days with transactions (simulated)
-//   - 14: avg_daily_volume    - Total volume / days active
-//   - 15: hustler_balance     - Latest Hustler Fund debt/balance
-//   - 16: okoa_frequency      - Count of Okoa Jahazi occurrences
-//   - 17: airtel_volume       - Total Airtel Money transaction volume
-//   - 18: lender_diversity    - Count of unique digital lenders
-//   - 19: emergency_reliance  - (Okoa + Fuliza) / Total Income
-//   - 20: savings_rate        - MMF deposits / Total Income
-//   - 21: bank_activity       - Count of bank transactions
 func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 	features := make([]float64, featureCount)
 
@@ -180,71 +180,71 @@ func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 	}
 
 	// Feature 0: Total Income
-	features[0] = totalIncome
+	features[FeatureTotalIncome] = totalIncome
 
 	// Feature 1: Total Expenses
-	features[1] = totalExpenses
+	features[FeatureTotalExpenses] = totalExpenses
 
 	// Feature 2: Net Flow
-	features[2] = totalIncome - totalExpenses
+	features[FeatureNetFlow] = totalIncome - totalExpenses
 
 	// Feature 3: Average Transaction Amount
-	features[3] = safeDiv(sum(amounts), float64(len(amounts)))
+	features[FeatureAvgTxnAmount] = safeDiv(sum(amounts), float64(len(amounts)))
 
 	// Feature 4: Transaction Count
-	features[4] = float64(len(txns))
+	features[FeatureTxnCount] = float64(len(txns))
 
 	// Feature 5: Income Regularity (coefficient of variation)
-	features[5] = coefficientOfVariation(incomeAmounts)
+	features[FeatureIncomeRegularity] = coefficientOfVariation(incomeAmounts)
 
 	// Feature 6: Gambling Index
-	features[6] = safeDiv(gamblingSpend, totalExpenses)
+	features[FeatureGamblingIndex] = safeDiv(gamblingSpend, totalExpenses)
 
 	// Feature 7: Utility Ratio
-	features[7] = safeDiv(utilitySpend, totalExpenses)
+	features[FeatureUtilityRatio] = safeDiv(utilitySpend, totalExpenses)
 
 	// Feature 8: Fuliza Usage
-	features[8] = safeDiv(fulizaBorrowed, totalIncome)
+	features[FeatureFulizaUsage] = safeDiv(fulizaBorrowed, totalIncome)
 
 	// Feature 9: Fuliza Repay Rate
-	features[9] = safeDiv(fulizaRepaid, fulizaBorrowed)
+	features[FeatureFulizaRepayRate] = safeDiv(fulizaRepaid, fulizaBorrowed)
 
 	// Feature 10: P2P Ratio
-	features[10] = safeDiv(p2pSends, totalExpenses)
+	features[FeatureP2PRatio] = safeDiv(p2pSends, totalExpenses)
 
 	// Feature 11: Max Single Transaction
-	features[11] = maxTxn
+	features[FeatureMaxSingleTxn] = maxTxn
 
 	// Feature 12: Balance Volatility (std dev of amounts)
-	features[12] = stdDev(amounts)
+	features[FeatureBalanceVolatility] = stdDev(amounts)
 
 	// Feature 13: Days Active (estimated from transaction count)
-	features[13] = math.Min(float64(len(txns)), 30)
+	features[FeatureDaysActive] = math.Min(float64(len(txns)), 30)
 
 	// Feature 14: Average Daily Volume
-	features[14] = safeDiv(sum(amounts), features[13])
+	features[FeatureAvgDailyVolume] = safeDiv(sum(amounts), features[FeatureDaysActive])
 
 	// Feature 15: Hustler Balance (latest debt amount)
-	features[15] = hustlerBalance
+	features[FeatureHustlerBalance] = hustlerBalance
 
 	// Feature 16: Okoa Frequency (count of Okoa occurrences)
-	features[16] = okoaCount
+	features[FeatureOkoaFrequency] = okoaCount
 
-	// Feature 17: Airtel Volume (total Airtel transaction volume)
-	features[17] = airtelVolume
+	// Feature 17: Airtel Volume (total Airtel Money transaction volume)
+	features[FeatureAirtelVolume] = airtelVolume
 
 	// Feature 18: Lender Diversity (unique digital lenders)
-	features[18] = float64(len(lenders))
+	features[FeatureLenderDiversity] = float64(len(lenders))
 
-	// Feature 19: Emergency Reliance Ratio ((Okoa + Fuliza) / Income)
+	// Feature 19: Emergency Reliance Ratio ((Okoa + Fuliza) / Total Income)
 	emergencyBorrowing := okoaAmount + fulizaBorrowed
-	features[19] = safeDiv(emergencyBorrowing, totalIncome)
+	features[FeatureEmergencyReliance] = safeDiv(emergencyBorrowing, totalIncome)
 
 	// Feature 20: Savings Rate (MMF deposits / Income)
-	features[20] = safeDiv(mmfDeposits, totalIncome)
+	features[FeatureSavingsRate] = safeDiv(mmfDeposits, totalIncome)
 
 	// Feature 21: Bank Activity Count
-	features[21] = bankTxnCount
+	features[FeatureBankActivity] = bankTxnCount
 
 	return features
 }
