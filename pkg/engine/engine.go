@@ -22,27 +22,34 @@ func NewEngine() Vectorizer {
 }
 
 // featureCount is the number of features in the output vector.
-const featureCount = 15
+const featureCount = 22
 
-// Vectorize transforms transactions into a 15-element feature vector.
+// Vectorize transforms transactions into a 22-element feature vector.
 // Features are deterministic for XGBoost reproducibility.
 //
 // Feature indices:
-//   - 0: total_income       - Sum of all received amounts
-//   - 1: total_expenses     - Sum of all sent/paid amounts
-//   - 2: net_flow           - income - expenses
-//   - 3: avg_txn_amount     - Mean transaction value
-//   - 4: txn_count          - Total transaction count
-//   - 5: income_regularity  - Coefficient of variation for income
-//   - 6: gambling_index     - Gambling spend / total expenses
-//   - 7: utility_ratio      - Utility payments / total expenses
-//   - 8: fuliza_usage       - Fuliza borrowed / total income
-//   - 9: fuliza_repay_rate  - Fuliza repaid / Fuliza borrowed
-//   - 10: p2p_ratio         - P2P sends / total expenses
-//   - 11: max_single_txn    - Largest single transaction
-//   - 12: balance_volatility - Std dev of transaction amounts
-//   - 13: days_active       - Unique days with transactions (simulated)
-//   - 14: avg_daily_volume  - Total volume / days active
+//   - 0: total_income         - Sum of all received amounts
+//   - 1: total_expenses       - Sum of all sent/paid amounts
+//   - 2: net_flow             - income - expenses
+//   - 3: avg_txn_amount       - Mean transaction value
+//   - 4: txn_count            - Total transaction count
+//   - 5: income_regularity    - Coefficient of variation for income
+//   - 6: gambling_index       - Gambling spend / total expenses
+//   - 7: utility_ratio        - Utility payments / total expenses
+//   - 8: fuliza_usage         - Fuliza borrowed / total income
+//   - 9: fuliza_repay_rate    - Fuliza repaid / Fuliza borrowed
+//   - 10: p2p_ratio           - P2P sends / total expenses
+//   - 11: max_single_txn      - Largest single transaction
+//   - 12: balance_volatility  - Std dev of transaction amounts
+//   - 13: days_active         - Unique days with transactions (simulated)
+//   - 14: avg_daily_volume    - Total volume / days active
+//   - 15: hustler_balance     - Latest Hustler Fund debt/balance
+//   - 16: okoa_frequency      - Count of Okoa Jahazi occurrences
+//   - 17: airtel_volume       - Total Airtel Money transaction volume
+//   - 18: lender_diversity    - Count of unique digital lenders
+//   - 19: emergency_reliance  - (Okoa + Fuliza) / Total Income
+//   - 20: savings_rate        - MMF deposits / Total Income
+//   - 21: bank_activity       - Count of bank transactions
 func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 	features := make([]float64, featureCount)
 
@@ -59,8 +66,17 @@ func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 		fulizaRepaid   float64
 		p2pSends       float64
 		maxTxn         float64
-		amounts        = make([]float64, 0, len(txns))
-		incomeAmounts  = make([]float64, 0, len(txns)/2)
+		// New metrics
+		hustlerBalance float64
+		okoaCount      float64
+		airtelVolume   float64
+		mmfDeposits    float64
+		bankTxnCount   float64
+		okoaAmount     float64
+		// Tracking
+		amounts       = make([]float64, 0, len(txns))
+		incomeAmounts = make([]float64, 0, len(txns)/2)
+		lenders       = make(map[string]bool) // For lender diversity
 	)
 
 	for _, txn := range txns {
@@ -71,27 +87,92 @@ func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 		}
 
 		switch txn.Type {
-		case parser.TxnMPesaReceived, parser.TxnTKashReceived:
+		// Income types
+		case parser.TxnMPesaReceived, parser.TxnTKashReceived, parser.TxnAirtelReceived:
 			totalIncome += txn.Amount
 			incomeAmounts = append(incomeAmounts, txn.Amount)
+			if txn.Type == parser.TxnAirtelReceived {
+				airtelVolume += txn.Amount
+			}
 
-		case parser.TxnMPesaSent, parser.TxnTKashSent:
+		// Expense types (P2P)
+		case parser.TxnMPesaSent, parser.TxnTKashSent, parser.TxnAirtelSent:
 			totalExpenses += txn.Amount
 			p2pSends += txn.Amount
+			if txn.Type == parser.TxnAirtelSent {
+				airtelVolume += txn.Amount
+			}
 
+		// Paybill / Buy Goods
 		case parser.TxnMPesaPaybill, parser.TxnMPesaBuyGoods:
 			totalExpenses += txn.Amount
-			// Check if utility (simplified heuristic)
-			utilitySpend += txn.Amount * 0.3 // Assume 30% of paybill/buygoods is utility
+			utilitySpend += txn.Amount * 0.3 // Heuristic
 
+		// Fuliza
 		case parser.TxnFulizaLoan:
 			fulizaBorrowed += txn.Amount
-			totalIncome += txn.Amount // Fuliza adds to available funds
+			totalIncome += txn.Amount
 
 		case parser.TxnFulizaRepay:
 			fulizaRepaid += txn.Amount
 			totalExpenses += txn.Amount
 
+		// Hustler Fund
+		case parser.TxnHustlerLoan:
+			totalIncome += txn.Amount
+			if txn.Balance > hustlerBalance {
+				hustlerBalance = txn.Balance
+			}
+			if txn.Amount > 0 && hustlerBalance == 0 {
+				hustlerBalance = txn.Amount
+			}
+
+		case parser.TxnHustlerRepay:
+			totalExpenses += txn.Amount
+
+		// Okoa Jahazi
+		case parser.TxnOkoaReceived:
+			okoaCount++
+			okoaAmount += txn.Amount
+			totalIncome += txn.Amount
+
+		case parser.TxnOkoaDebt:
+			okoaCount++
+			if txn.Balance > 0 {
+				okoaAmount = txn.Balance
+			}
+
+		// Digital Lenders
+		case parser.TxnDigitalLoan:
+			totalIncome += txn.Amount
+			if txn.Lender != "" {
+				lenders[txn.Lender] = true
+			}
+
+		case parser.TxnDigitalRepay:
+			totalExpenses += txn.Amount
+			if txn.Lender != "" {
+				lenders[txn.Lender] = true
+			}
+
+		// MMF Savings
+		case parser.TxnMMFDeposit:
+			mmfDeposits += txn.Amount
+			totalExpenses += txn.Amount // Savings reduce available balance
+
+		case parser.TxnMMFWithdraw:
+			totalIncome += txn.Amount
+
+		// Bank activity
+		case parser.TxnBankDeposit:
+			bankTxnCount++
+			totalExpenses += txn.Amount
+
+		case parser.TxnBankWithdraw:
+			bankTxnCount++
+			totalIncome += txn.Amount
+
+		// Gambling
 		case parser.TxnGambling:
 			gamblingSpend += txn.Amount
 			totalExpenses += txn.Amount
@@ -138,11 +219,32 @@ func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 	features[12] = stdDev(amounts)
 
 	// Feature 13: Days Active (estimated from transaction count)
-	// In production, this would use actual timestamps
-	features[13] = math.Min(float64(len(txns)), 30) // Cap at 30 days
+	features[13] = math.Min(float64(len(txns)), 30)
 
 	// Feature 14: Average Daily Volume
 	features[14] = safeDiv(sum(amounts), features[13])
+
+	// Feature 15: Hustler Balance (latest debt amount)
+	features[15] = hustlerBalance
+
+	// Feature 16: Okoa Frequency (count of Okoa occurrences)
+	features[16] = okoaCount
+
+	// Feature 17: Airtel Volume (total Airtel transaction volume)
+	features[17] = airtelVolume
+
+	// Feature 18: Lender Diversity (unique digital lenders)
+	features[18] = float64(len(lenders))
+
+	// Feature 19: Emergency Reliance Ratio ((Okoa + Fuliza) / Income)
+	emergencyBorrowing := okoaAmount + fulizaBorrowed
+	features[19] = safeDiv(emergencyBorrowing, totalIncome)
+
+	// Feature 20: Savings Rate (MMF deposits / Income)
+	features[20] = safeDiv(mmfDeposits, totalIncome)
+
+	// Feature 21: Bank Activity Count
+	features[21] = bankTxnCount
 
 	return features
 }
