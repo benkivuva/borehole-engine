@@ -12,12 +12,14 @@ Follow these steps to build and run the Borehole Edge-Scoring application on you
 ---
 
 ### Step 1: Generate the Go Bridge (.aar)
-The mobile app needs the Go engine compiled into an Android library.
-Run this from the project root (`borehole-engine`):
+The mobile app needs the Go engine compiled into an Android library. 
+Run this command which sets the required environment variables for your system:
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"); gomobile bind -target=android -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
+$env:ANDROID_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk"; $env:ANDROID_NDK_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk\ndk\26.1.10909125"; $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"); gomobile bind -target=android -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
 ```
+
+
 
 ### Step 2: Install Mobile Dependencies
 Navigate to the mobile app folder and install the necessary React Native packages:
