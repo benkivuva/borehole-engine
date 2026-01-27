@@ -72,15 +72,15 @@ const App = () => {
           <View style={styles.resultCard}>
             <Text style={styles.cardTitle}>Scoring Result</Text>
             <View style={styles.scoreContainer}>
-              <Text style={[styles.scoreValue, { color: getScoreColor(result.Score) }]}>
-                {(result.Score * 1000).toFixed(0)}
+              <Text style={[styles.scoreValue, { color: getScoreColor(result.score || 0) }]}>
+                {((result.score || 0) * 1000).toFixed(0)}
               </Text>
               <Text style={styles.scoreLabel}>Borehole Index</Text>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{result.TxnCount}</Text>
+                <Text style={styles.statValue}>{result.txn_count || 0}</Text>
                 <Text style={styles.statLabel}>Transactions</Text>
               </View>
               <View style={styles.statBox}>
@@ -89,12 +89,12 @@ const App = () => {
               </View>
             </View>
 
-            {result.Features.length > 0 && (
+            {(result?.features?.length || 0) > 0 && (
               <View style={styles.featureList}>
                 <Text style={styles.featureTitle}>Feature Vector (Selected High-Impact):</Text>
                 <View style={styles.featureRow}>
-                  <Text style={styles.featureText}>Hustler Balance: {result.Features[11]?.toFixed(2)}</Text>
-                  <Text style={styles.featureText}>Okoa Reliance: {result.Features[12]?.toFixed(2)}</Text>
+                  <Text style={styles.featureText}>Hustler Balance: {result.features?.[11]?.toFixed(2) || '0.00'}</Text>
+                  <Text style={styles.featureText}>Okoa Reliance: {result.features?.[12]?.toFixed(2) || '0.00'}</Text>
                 </View>
               </View>
             )}

@@ -3,11 +3,12 @@ import { NativeModules } from 'react-native';
 const { BoreholeModule } = NativeModules;
 
 export interface ScoreResult {
-  Score: number;
-  Features: number[];
-  TxnCount: number;
+  score: number;
+  features: number[];
+  txn_count: number;
   error?: string;
 }
+
 
 export const calculateBoreholeScore = async (logs: string[]): Promise<ScoreResult> => {
   try {
@@ -17,9 +18,9 @@ export const calculateBoreholeScore = async (logs: string[]): Promise<ScoreResul
   } catch (error) {
     console.error('Borehole Scoring Error:', error);
     return {
-      Score: 0,
-      Features: [],
-      TxnCount: 0,
+      score: 0,
+      features: [],
+      txn_count: 0,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
