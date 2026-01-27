@@ -109,7 +109,7 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation("com.facebook.react:flipper-integration")
     implementation(fileTree(dir: "libs", include: ["*.jar", "*.aar"]))
-    implementation(project(":borehole")) // If using module approach, otherwise fileTree is enough
+
 
 
     if (hermesEnabled.toBoolean()) {
