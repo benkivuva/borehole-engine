@@ -16,8 +16,14 @@ The mobile app needs the Go engine compiled into an Android library.
 Run this command which sets the required environment variables for your system:
 
 ```powershell
-$env:ANDROID_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk"; $env:ANDROID_NDK_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk\ndk\26.1.10909125"; $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"); gomobile bind -target=android -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
+# Set SDK/NDK paths (Adjust to your local system)
+$env:ANDROID_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk"
+$env:ANDROID_NDK_HOME = "$env:ANDROID_HOME\ndk\26.1.10909125"
+
+# Build the bridge (Explicitly target API 34 for modern Android)
+gomobile bind -v -target=android -androidapi 34 -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
 ```
+
 
 
 
@@ -47,6 +53,23 @@ npx react-native run-android
 ---
 
 ### Operating the App
-1.  **Paste Logs**: Copy and paste raw M-Pesa, Airtel, or Bank SMS logs into the input field.
-2.  **Calculate**: Tap **"Calculate Edge Score"**.
-3.  **View Result**: The app calls the Go-Mobile engine via the JNI bridge and displays your **Borehole Index** (0-1000) and feature breakdown instantly, entirely offline.
+1.  **✨ Auto-Scan (Recommended)**: Tap the emerald green **"Auto-Scan My Financial Health"** button. The app will securely read your SMS inbox, filter for financial logs, and calculate your score instantly.
+2.  **Manual Entry**: You can still paste raw logs into the text field and tap **"Calculate Edge Score"**.
+3.  **Privacy**: No data is uploaded. All parsing and scoring occurs within the Go-Engine on your device.
+
+---
+
+### Testing with ADB (Emulator Only)
+If you are using an emulator, you can inject test signals using these commands:
+
+```powershell
+# 1. Income (M-Pesa QKJ series)
+adb emu sms send Sarah "QKJ3XPYC5T Confirmed. You have received Ksh15,000.00 from SARAH JANE on 25/1/26."
+
+# 2. Debt (Okoa Jahazi Combined Signal)
+adb emu sms send 444 "You have received Ksh 100.00 Okoa Jahazi. Your Okoa debt is Ksh 110.00."
+
+# 3. Repayment (Hustler Fund "Sent" keyword)
+adb emu sms send Hustler "Confirmed. You have sent Ksh2,000.00 to Hustler Fund on 20/1/26."
+```
+

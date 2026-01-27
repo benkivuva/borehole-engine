@@ -4,14 +4,18 @@ High-performance Go-based mobile infrastructure for offline credit scoring in Ke
 
 ## Features
 
+- **Automated SMS Scraping (New)**
+  - One-tap financial health scan directly from Android inbox.
+  - Smart keyword filtering (Confirmed, M-PESA, Airtel, HustlerFund, etc.).
 - **Multi-Provider SMS Parsing**
-  - **Mobile Money**: M-Pesa (2026 UA series), Airtel Money, T-Kash
-  - **Credit Products**: Fuliza, Hustler Fund, Okoa Jahazi
+  - **Mobile Money**: M-Pesa (Supports any alphanumeric series), Airtel Money, T-Kash
+  - **Credit Products**: Fuliza, Hustler Fund (Advanced repayment detection), Okoa Jahazi (Debt snapshotting)
   - **Digital Lenders**: Tala, Branch, Zenka, Zash, Okolea
   - **Savings & Banking**: M-Shwari, KCB M-Pesa, Mali, Stawi, Bank Transfers (Equity, KCB, Co-op, NCBA)
 - **22-Feature Vector** - Financial health, lender diversity, emergency reliance, savings rate
-- **Mobile-Optimized** - Zero-allocation techniques, keyword-based fast path routing
-- **Go 1.22+ API** - Modern ServeMux with method routing
+- **Local-Only Processing** - 100% offline, privacy-first engine. No SMS logs ever leave the device.
+- **Go 1.25+ Infrastructure** - Zero-allocation techniques and high-performance routing.
+
 
 ## Quick Start
 
