@@ -29,11 +29,21 @@ const App = () => {
     setLoading(false);
   };
 
-  const getScoreColor = (score: number) => {
-    if (score > 0.7) return '#4CAF50';
-    if (score > 0.4) return '#FFC107';
-    return '#F44336';
+  const dashboardColors = {
+    good: '#10B981', // Emerald Green
+    fair: '#F59E0B', // Sunset Orange
+    poor: '#EF4444', // Crimson
+    blue: '#2196F3',
   };
+
+  const getHealthData = (score: number) => {
+    if (score >= 0.9) return { label: 'Excellent', color: dashboardColors.good };
+    if (score >= 0.7) return { label: 'Good', color: dashboardColors.good };
+    if (score >= 0.4) return { label: 'Fair', color: dashboardColors.fair };
+    return { label: 'Poor', color: dashboardColors.poor };
+  };
+
+  const health = getHealthData(result?.score || 0);
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode ? styles.darkBg : styles.lightBg]}>
@@ -41,20 +51,22 @@ const App = () => {
       <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View style={styles.header}>
           <Text style={styles.title}>Borehole Engine</Text>
-          <Text style={styles.subtitle}>Edge Credit Scoring Infrastructure</Text>
+          <Text style={styles.subtitle}>Fintech Edge Infrastructure</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>SMS Logs Input</Text>
-          <TextInput
-            multiline
-            numberOfLines={10}
-            style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-            placeholder="Paste M-Pesa, Airtel, or Bank SMS logs here..."
-            placeholderTextColor="#888"
-            value={logs}
-            onChangeText={setLogs}
-          />
+          <Text style={styles.cardTitle}>Financial Data Input</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              multiline
+              numberOfLines={6}
+              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+              placeholder="Paste M-Pesa, Airtel, or Bank SMS logs here..."
+              placeholderTextColor="#94A3B8"
+              value={logs}
+              onChangeText={setLogs}
+            />
+          </View>
           <TouchableOpacity
             style={styles.button}
             onPress={handleCalculate}
@@ -70,175 +82,215 @@ const App = () => {
 
         {result && (
           <View style={styles.resultCard}>
-            <Text style={styles.cardTitle}>Scoring Result</Text>
-            <View style={styles.scoreContainer}>
-              <Text style={[styles.scoreValue, { color: getScoreColor(result.score || 0) }]}>
-                {((result.score || 0) * 1000).toFixed(0)}
-              </Text>
-              <Text style={styles.scoreLabel}>Borehole Index</Text>
+            {/* Speedometer Score Section */}
+            <View style={styles.speedometerContainer}>
+              <View style={[styles.semiCircle, { borderColor: health.color }]}>
+                <Text style={[styles.scoreValue, { color: health.color }]}>
+                  {((result.score || 0) * 1000).toFixed(0)}
+                </Text>
+                <Text style={[styles.healthLabel, { color: health.color }]}>{health.label}</Text>
+              </View>
+              <Text style={styles.offlineCaption}>Calculated 100% Offline</Text>
             </View>
 
-            <View style={styles.statsRow}>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{result.txn_count || 0}</Text>
-                <Text style={styles.statLabel}>Transactions</Text>
+            {/* The Three Pillars Row */}
+            <View style={styles.pillarsRow}>
+              <View style={styles.pillar}>
+                <Text style={styles.pillarLabel}>Cash In</Text>
+                <Text style={styles.pillarValue}>
+                  Ksh {result.features?.[0]?.toLocaleString() || '0'}
+                </Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>Verified</Text>
-                <Text style={styles.statLabel}>Status</Text>
+              <View style={[styles.pillar, styles.pillarBorder]}>
+                <Text style={styles.pillarLabel}>Cash Out</Text>
+                <Text style={styles.pillarValue}>
+                  Ksh {result.features?.[1]?.toLocaleString() || '0'}
+                </Text>
+              </View>
+              <View style={styles.pillar}>
+                <Text style={styles.pillarLabel}>Debt Level</Text>
+                <Text style={[styles.pillarValue, { color: (result.features?.[19] || 0) > 0.3 ? dashboardColors.poor : '#334155' }]}>
+                  {((result.features?.[19] || 0) * 100).toFixed(0)}%
+                </Text>
               </View>
             </View>
-
-            {(result?.features?.length || 0) > 0 && (
-              <View style={styles.featureList}>
-                <Text style={styles.featureTitle}>Feature Vector (Selected High-Impact):</Text>
-                <View style={styles.featureRow}>
-                  <Text style={styles.featureText}>Hustler Balance: {result.features?.[11]?.toFixed(2) || '0.00'}</Text>
-                  <Text style={styles.featureText}>Okoa Reliance: {result.features?.[12]?.toFixed(2) || '0.00'}</Text>
-                </View>
-              </View>
-            )}
 
             {result.error && (
               <Text style={styles.errorText}>Error: {result.error}</Text>
             )}
           </View>
         )}
+
+        <View style={styles.footer}>
+          <Text style={styles.privacyNote}>🛡️ Privacy First: Your financial logs never leave this device.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   lightBg: { backgroundColor: '#F5F7FA' },
-  darkBg: { backgroundColor: '#121212' },
+  darkBg: { backgroundColor: '#0F172A' },
   header: {
-    padding: 30,
+    paddingTop: 30,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    color: '#2196F3',
-    letterSpacing: 1,
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 4,
+    fontWeight: '500',
   },
   card: {
-    margin: 20,
-    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 24,
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
   },
   resultCard: {
-    margin: 20,
-    marginTop: 0,
-    padding: 25,
+    marginHorizontal: 20,
+    marginBottom: 30,
+    padding: 24,
     borderRadius: 16,
-    backgroundColor: '#fff',
-    elevation: 4,
+    backgroundColor: '#FFFFFF',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: 16,
+    color: '#1E293B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
   },
   input: {
-    borderRadius: 12,
-    padding: 15,
-    fontSize: 14,
-    minHeight: 150,
+    padding: 16,
+    fontSize: 15,
+    minHeight: 120,
     textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
-  lightInput: { backgroundColor: '#FAFAFA', color: '#333' },
-  darkInput: { backgroundColor: '#1E1E1E', color: '#EEE', borderColor: '#333' },
+  lightInput: { backgroundColor: '#F8FAFC', color: '#1E293B' },
+  darkInput: { backgroundColor: '#1E293B', color: '#F1F5F9', borderColor: '#334155' },
   button: {
     backgroundColor: '#2196F3',
     padding: 18,
     borderRadius: 12,
     marginTop: 20,
     alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
-  scoreContainer: {
+  speedometerContainer: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 10,
+    width: '100%',
+  },
+  semiCircle: {
+    width: 220,
+    height: 120,
+    borderTopLeftRadius: 110,
+    borderTopRightRadius: 110,
+    borderWidth: 12,
+    borderBottomWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 5,
   },
   scoreValue: {
-    fontSize: 64,
+    fontSize: 52,
     fontWeight: '900',
+    marginBottom: -5,
   },
-  scoreLabel: {
-    fontSize: 16,
-    color: '#888',
+  healthLabel: {
+    fontSize: 18,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 5,
+  },
+  offlineCaption: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 15,
     fontWeight: '600',
   },
-  statsRow: {
+  pillarsRow: {
     flexDirection: 'row',
     width: '100%',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
+    marginTop: 30,
     paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
-  statBox: {
+  pillar: {
+    flex: 1,
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
+  pillarBorder: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-  featureList: {
-    marginTop: 20,
-    width: '100%',
-    padding: 15,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-  },
-  featureTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#666',
-    marginBottom: 8,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  featureText: {
+  pillarLabel: {
     fontSize: 11,
-    color: '#444',
-    fontFamily: 'monospace',
+    color: '#64748B',
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  pillarValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  privacyNote: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   errorText: {
-    color: '#F44336',
-    marginTop: 10,
+    color: '#EF4444',
+    marginTop: 15,
     fontSize: 12,
+    textAlign: 'center',
   }
 });
 
