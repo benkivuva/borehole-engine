@@ -10,7 +10,11 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
+import SmsAndroid from 'react-native-get-sms-android';
+
 
 import { calculateBoreholeScore, ScoreResult } from './BoreholeBridge';
 
@@ -18,7 +22,9 @@ const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
   const [logs, setLogs] = useState('');
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
+
 
   const handleCalculate = async () => {
     if (!logs.trim()) return;
@@ -28,6 +34,76 @@ const App = () => {
     setResult(scoreResult);
     setLoading(false);
   };
+
+  const requestSmsPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_SMS,
+        {
+          title: 'Borehole SMS Permission',
+          message: 'Borehole Engine needs access to your SMS to calculate your offline credit score.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+
+  const autoScanSms = async () => {
+    const hasPermission = await requestSmsPermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'SMS permission is required for auto-scanning.');
+      return;
+    }
+
+    setScanning(true);
+    setLoading(true);
+
+    const filter = {
+      box: 'inbox',
+      maxCount: 200,
+    };
+
+    SmsAndroid.list(
+      JSON.stringify(filter),
+      (fail: string) => {
+        setScanning(false);
+        setLoading(false);
+        Alert.alert('Scan Failed', fail);
+      },
+      async (count: number, smsList: string) => {
+        const messages = JSON.parse(smsList);
+        const financialKeywords = [
+          'Confirmed', 'M-PESA', 'Airtel', 'HustlerFund',
+          'KCB', 'Equity', 'Okoa', 'Transaction ID'
+        ];
+
+        const filteredLogs = messages
+          .map((msg: any) => msg.body)
+          .filter((body: string) =>
+            financialKeywords.some(keyword => body.includes(keyword))
+          );
+
+        if (filteredLogs.length === 0) {
+          setScanning(false);
+          setLoading(false);
+          Alert.alert('Scan Complete', 'No relevant financial logs detected in your inbox.');
+          return;
+        }
+
+        const scoreResult = await calculateBoreholeScore(filteredLogs);
+        setResult(scoreResult);
+        setScanning(false);
+        setLoading(false);
+      },
+    );
+  };
+
 
   const dashboardColors = {
     good: '#10B981', // Emerald Green
@@ -55,7 +131,19 @@ const App = () => {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Financial Data Input</Text>
+          <TouchableOpacity
+            style={styles.autoScanButton}
+            onPress={autoScanSms}
+            disabled={loading || scanning}
+          >
+            {scanning ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>✨ Auto-Scan My Financial Health</Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={[styles.cardTitle, { marginTop: 20 }]}>Or Paste Manually</Text>
           <View style={styles.inputContainer}>
             <TextInput
               multiline
@@ -67,6 +155,7 @@ const App = () => {
               onChangeText={setLogs}
             />
           </View>
+
           <TouchableOpacity
             style={styles.button}
             onPress={handleCalculate}
@@ -123,7 +212,9 @@ const App = () => {
 
         <View style={styles.footer}>
           <Text style={styles.privacyNote}>🛡️ Privacy First: Your financial logs never leave this device.</Text>
+          <Text style={styles.privacyDetail}>🛡️ Privacy: Your SMS messages are processed locally by the Go-Engine and never uploaded to any server.</Text>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -209,6 +300,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  autoScanButton: {
+    backgroundColor: '#10B981',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -284,8 +387,17 @@ const styles = StyleSheet.create({
   privacyNote: {
     fontSize: 12,
     color: '#94A3B8',
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 4,
   },
+  privacyDetail: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '400',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+
   errorText: {
     color: '#EF4444',
     marginTop: 15,
