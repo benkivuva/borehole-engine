@@ -62,6 +62,13 @@ func TestParseSingleLog_MPesa(t *testing.T) {
 			wantAmount:  1000.00,
 			wantRefCode: "UA9999XYZABC",
 		},
+		{
+			name:        "M-Pesa received (QKJ prefix)",
+			log:         "QKJ3XPYC5T Confirmed. You have received Ksh15,000.00 from SARAH JANE",
+			wantType:    TxnMPesaReceived,
+			wantAmount:  15000.00,
+			wantRefCode: "QKJ3XPYC5T",
+		},
 	}
 
 	for _, tt := range tests {
@@ -182,6 +189,12 @@ func TestParseSingleLog_Hustler(t *testing.T) {
 			wantType:   TxnHustlerRepay,
 			wantAmount: 200.00,
 		},
+		{
+			name:       "Hustler Fund sent repayment",
+			log:        "Confirmed. You have sent Ksh2,000.00 to Hustler Fund on 20/1/26.",
+			wantType:   TxnHustlerRepay,
+			wantAmount: 2000.00,
+		},
 	}
 
 	for _, tt := range tests {
@@ -219,6 +232,13 @@ func TestParseSingleLog_Okoa(t *testing.T) {
 			log:         "Your Okoa debt is Ksh50. Please repay",
 			wantType:    TxnOkoaDebt,
 			wantBalance: 50.00,
+		},
+		{
+			name:        "Okoa received + debt combined",
+			log:         "You have received Ksh 100.00 Okoa Jahazi. Your Okoa debt is Ksh 110.00.",
+			wantType:    TxnOkoaReceived,
+			wantAmount:  100.00,
+			wantBalance: 110.00,
 		},
 	}
 

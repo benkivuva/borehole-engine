@@ -11,23 +11,24 @@ import "regexp"
 // =============================================================================
 var (
 	// mpesaReceivedPattern matches: "UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE 0712345678..."
+	// Broadened to any 10-12 char alphanumeric refcode
 	mpesaReceivedPattern = regexp.MustCompile(
-		`(?i)(?P<refcode>UA[A-Z0-9]{8,10})\s+[Cc]onfirmed\.?\s+[Yy]ou\s+have\s+received\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+from\s+(?P<sender>[A-Z\s]+\d*)`,
+		`(?i)(?P<refcode>[A-Z0-9]{10,12})\s+[Cc]onfirmed\.?\s+[Yy]ou\s+have\s+received\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+from\s+(?P<sender>[A-Z\s]+\d*)`,
 	)
 
 	// mpesaSentPattern matches: "UA1234ABCD Confirmed. Ksh500.00 sent to JANE DOE 0798765432..."
 	mpesaSentPattern = regexp.MustCompile(
-		`(?i)(?P<refcode>UA[A-Z0-9]{8,10})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+sent\s+to\s+(?P<recipient>[A-Z\s]+\d*)`,
+		`(?i)(?P<refcode>[A-Z0-9]{10,12})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+sent\s+to\s+(?P<recipient>[A-Z\s]+\d*)`,
 	)
 
 	// mpesaPaybillPattern matches: "UA1234ABCD Confirmed. Ksh1,000.00 paid to KPLC. Account Number 12345..."
 	mpesaPaybillPattern = regexp.MustCompile(
-		`(?i)(?P<refcode>UA[A-Z0-9]{8,10})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+paid\s+to\s+(?P<account>[A-Z0-9\s]+)`,
+		`(?i)(?P<refcode>[A-Z0-9]{10,12})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+paid\s+to\s+(?P<account>[A-Z0-9\s]+)`,
 	)
 
 	// mpesaBuyGoodsPattern matches: "UA1234ABCD Confirmed. Ksh200.00 paid to SUPERMARKET Till Number 123456..."
 	mpesaBuyGoodsPattern = regexp.MustCompile(
-		`(?i)(?P<refcode>UA[A-Z0-9]{8,10})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+paid\s+to\s+(?P<merchant>[A-Z\s]+)\s*[Tt]ill`,
+		`(?i)(?P<refcode>[A-Z0-9]{10,12})\s+[Cc]onfirmed\.?\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+paid\s+to\s+(?P<merchant>[A-Z\s]+)\s*[Tt]ill`,
 	)
 )
 
@@ -88,9 +89,9 @@ var (
 		`(?i)Hustler\s+Fund.*(?:disbursed|received)\s+(?:Ksh|KES)\s*(?P<amt>[\d,]+\.?\d*)`,
 	)
 
-	// hustlerRepayPattern matches: "Hustler Fund. You have repaid Ksh200.00..."
+	// hustlerRepayPattern matches: "Hustler Fund. You have repaid Ksh200.00..." or "sent Ksh2,00.00 to Hustler Fund"
 	hustlerRepayPattern = regexp.MustCompile(
-		`(?i)Hustler\s+Fund.*repaid\s+(?:Ksh|KES)\s*(?P<amt>[\d,]+\.?\d*)`,
+		`(?i)(?:Hustler\s+Fund.*(?:repaid|sent)|(?:repaid|sent)).*(?:Ksh|KES)\s*(?P<amt>[\d,]+\.?\d*).*(?:Hustler\s+Fund)?`,
 	)
 
 	// hustlerBalancePattern matches: "Hustler Fund. Your loan balance is Ksh300.00..."
@@ -115,7 +116,7 @@ var (
 
 	// okoaRepayPattern matches: "Okoa Jahazi. You have repaid Ksh50..."
 	okoaRepayPattern = regexp.MustCompile(
-		`(?i)Okoa\s+Jahazi.*repaid\s+(?:Ksh|KES)\s*(?P<amt>[\d,]+\.?\d*)`,
+		`(?i)Okoa\s+(?:Jahazi)?.*(?:repaid|fulfilled|debt\s+of)\s+(?:Ksh|KES)\s*(?P<amt>[\d,]+\.?\d*)`,
 	)
 )
 

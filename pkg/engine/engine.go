@@ -133,13 +133,19 @@ func (e *Engine) Vectorize(txns []parser.Transaction) []float64 {
 		// Okoa Jahazi
 		case parser.TxnOkoaReceived:
 			okoaCount++
-			okoaAmount += txn.Amount
 			totalIncome += txn.Amount
+			if txn.Balance > 0 {
+				okoaAmount = txn.Balance
+			} else {
+				okoaAmount += txn.Amount
+			}
 
 		case parser.TxnOkoaDebt:
 			okoaCount++
 			if txn.Balance > 0 {
 				okoaAmount = txn.Balance
+			} else if txn.Amount > 0 {
+				okoaAmount += txn.Amount
 			}
 
 		// Digital Lenders

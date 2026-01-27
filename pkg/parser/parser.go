@@ -269,26 +269,36 @@ func parseHustler(log string, txn Transaction) (Transaction, error) {
 }
 
 // parseOkoa handles Okoa Jahazi transactions.
+// Robustly extracts both disbursement amount and remaining debt balance.
 func parseOkoa(log string, txn Transaction) (Transaction, error) {
+	matched := false
+
 	if match := okoaReceivedPattern.FindStringSubmatch(log); match != nil {
 		txn.Type = TxnOkoaReceived
 		txn.Amount = parseAmount(getNamedGroup(okoaReceivedPattern, match, "amt"))
-		return txn, nil
+		matched = true
 	}
 
 	if match := okoaDebtPattern.FindStringSubmatch(log); match != nil {
-		txn.Type = TxnOkoaDebt
+		if txn.Type == TxnUnknown {
+			txn.Type = TxnOkoaDebt
+		}
 		txn.Balance = parseAmount(getNamedGroup(okoaDebtPattern, match, "amt"))
-		return txn, nil
+		matched = true
 	}
 
 	if match := okoaRepayPattern.FindStringSubmatch(log); match != nil {
-		txn.Type = TxnOkoaDebt
+		if txn.Type == TxnUnknown {
+			txn.Type = TxnOkoaDebt
+		}
 		txn.Amount = parseAmount(getNamedGroup(okoaRepayPattern, match, "amt"))
-		return txn, nil
+		matched = true
 	}
 
-	return txn, fmt.Errorf("no Okoa pattern matched")
+	if !matched {
+		return txn, fmt.Errorf("no Okoa pattern matched")
+	}
+	return txn, nil
 }
 
 // parseMMF handles Money Market Fund savings (M-Shwari, KCB M-Pesa, Mali, Stawi).
