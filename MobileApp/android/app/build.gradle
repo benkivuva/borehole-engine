@@ -109,6 +109,9 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation("com.facebook.react:flipper-integration")
     implementation(fileTree(dir: "libs", include: ["*.jar", "*.aar"]))
+    implementation 'net.zetetic:android-database-sqlcipher:4.5.3'
+    implementation "androidx.sqlite:sqlite:2.2.0"
+
 
 
 

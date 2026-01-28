@@ -11,9 +11,9 @@ import "regexp"
 // =============================================================================
 var (
 	// mpesaReceivedPattern matches: "UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE 0712345678..."
-	// Broadened to any 10-12 char alphanumeric refcode
+	// Broadened to any 8-12 char alphanumeric refcode (to support test codes)
 	mpesaReceivedPattern = regexp.MustCompile(
-		`(?i)(?P<refcode>[A-Z0-9]{10,12})\s+[Cc]onfirmed\.?\s+[Yy]ou\s+have\s+received\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+from\s+(?P<sender>[A-Z\s]+\d*)`,
+		`(?i)(?P<refcode>[A-Z0-9]{8,12})\s+[Cc]onfirmed\.?\s+[Yy]ou\s+have\s+received\s+Ksh\s*(?P<amt>[\d,]+\.?\d*)\s+from\s+(?P<sender>[A-Z\s]+\d*)`,
 	)
 
 	// mpesaSentPattern matches: "UA1234ABCD Confirmed. Ksh500.00 sent to JANE DOE 0798765432..."

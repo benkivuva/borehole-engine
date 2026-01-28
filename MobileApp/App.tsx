@@ -12,8 +12,11 @@ import {
   ActivityIndicator,
   PermissionsAndroid,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
+import { Database, AuditLog } from './src/storage/Database';
 
 
 import { calculateBoreholeScore, ScoreResult } from './BoreholeBridge';
@@ -24,6 +27,23 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
+  const [history, setHistory] = useState<AuditLog[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const loadHistory = async () => {
+    const data = await Database.getHistory();
+    setHistory(data);
+    setShowHistory(true);
+  };
+
+  const nukeHistory = async () => {
+    await Database.nukeData();
+    setHistory([]);
+    setResult(null); // Clear dashboard
+    setLogs('');     // Clear input
+    setShowHistory(false); // Close modal
+    Alert.alert('System Reset', 'Local database and dashboard cleared.');
+  };
 
 
   const handleCalculate = async () => {
@@ -32,6 +52,9 @@ const App = () => {
     const logLines = logs.split('\n').filter(line => line.trim().length > 0);
     const scoreResult = await calculateBoreholeScore(logLines);
     setResult(scoreResult);
+    if (scoreResult.score) {
+      await Database.saveScore(scoreResult.score, scoreResult.features || []);
+    }
     setLoading(false);
   };
 
@@ -98,6 +121,9 @@ const App = () => {
 
         const scoreResult = await calculateBoreholeScore(filteredLogs);
         setResult(scoreResult);
+        if (scoreResult.score) {
+          await Database.saveScore(scoreResult.score, scoreResult.features || []);
+        }
         setScanning(false);
         setLoading(false);
       },
@@ -128,6 +154,9 @@ const App = () => {
         <View style={styles.header}>
           <Text style={styles.title}>Borehole Engine</Text>
           <Text style={styles.subtitle}>Fintech Edge Infrastructure</Text>
+          <TouchableOpacity onPress={loadHistory} style={styles.historyBtn}>
+            <Text style={styles.historyBtnText}>📜 History</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
@@ -216,6 +245,43 @@ const App = () => {
         </View>
 
       </ScrollView>
+
+      <Modal visible={showHistory} animationType="slide">
+        <SafeAreaView style={[styles.container, isDarkMode ? styles.darkBg : styles.lightBg]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Audit Log</Text>
+            <TouchableOpacity onPress={() => setShowHistory(false)} style={styles.closeBtn}>
+              <Text style={styles.closeBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={history}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.historyItem}>
+                <Text style={styles.historyDate}>
+                  {new Date(item.timestamp).toLocaleString()}
+                </Text>
+                <View style={styles.historyRow}>
+                  <Text style={styles.historyScore}>
+                    Score: {((item.score || 0) * 1000).toFixed(0)}
+                  </Text>
+                  {/* Parse features to show Income if possible */}
+                  <Text style={styles.historyDetail}>
+                    Logs: Encrypted
+                  </Text>
+                </View>
+              </View>
+            )}
+            contentContainerStyle={{ padding: 20 }}
+          />
+
+          <TouchableOpacity onPress={nukeHistory} style={styles.nukeBtn}>
+            <Text style={styles.nukeBtnText}>☢️ NUKE DATA</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -403,7 +469,36 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 12,
     textAlign: 'center',
-  }
+  },
+  historyBtn: {
+    marginTop: 10,
+    backgroundColor: '#334155',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  historyBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  closeBtn: { position: 'absolute', right: 20, top: 35 },
+  closeBtnText: { color: '#2196F3', fontSize: 16, fontWeight: '600' },
+  historyItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  historyDate: { fontSize: 12, color: '#94A3B8', marginBottom: 4 },
+  historyRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  historyScore: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  historyDetail: { fontSize: 12, color: '#64748B' },
+  nukeBtn: {
+    backgroundColor: '#EF4444',
+    margin: 20,
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  nukeBtnText: { color: '#fff', fontWeight: '800' },
 });
 
 export default App;
