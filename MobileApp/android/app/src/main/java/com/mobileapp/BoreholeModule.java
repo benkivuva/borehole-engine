@@ -25,9 +25,10 @@ public class BoreholeModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void calculateScore(String jsonLogs, Promise promise) {
+    public void calculateBoreholeScore(String jsonLogs, Promise promise) {
         try {
-            String result = engine.calculateScore(jsonLogs);
+            String result = engine.calculateBoreholeScore(jsonLogs);
+
             promise.resolve(result);
         } catch (Exception e) {
             promise.reject("ERR_SCORE", e.getMessage());

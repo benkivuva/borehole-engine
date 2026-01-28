@@ -1,0 +1,23 @@
+[
+  {
+    "nodes": [
+      {
+        "nodeid": 0,
+        "depth": 0,
+        "split": 0,
+        "split_condition": 1000.0,
+        "yes": 1,
+        "no": 2,
+        "missing": 1
+      },
+      {
+        "nodeid": 1,
+        "leaf": 0.5
+      },
+      {
+        "nodeid": 2,
+        "leaf": -0.5
+      }
+    ]
+  }
+]

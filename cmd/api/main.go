@@ -29,7 +29,7 @@ func main() {
 
 	// Initialize dependencies
 	p := parser.NewParser()
-	e := engine.NewEngine()
+	// Engine is now a singleton, initialized on first use
 
 	// Setup router using Go 1.22+ ServeMux
 	mux := http.NewServeMux()
@@ -38,7 +38,7 @@ func main() {
 	mux.HandleFunc("GET /health", healthHandler)
 
 	// Main scoring endpoint
-	mux.HandleFunc("POST /v1/score", scoreHandler(p, e, logger))
+	mux.HandleFunc("POST /v1/score", scoreHandler(p, logger))
 
 	// Create server
 	addr := os.Getenv("ADDR")
@@ -101,7 +101,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // scoreHandler processes SMS logs and returns a credit score.
-func scoreHandler(p parser.Parser, e engine.Vectorizer, logger *log.Logger) http.HandlerFunc {
+func scoreHandler(p parser.Parser, logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse request
 		var req ScoreRequest
@@ -126,10 +126,18 @@ func scoreHandler(p parser.Parser, e engine.Vectorizer, logger *log.Logger) http
 		}
 
 		// Generate feature vector
-		features := e.Vectorize(txns)
+		features := engine.MapFeatures(txns)
 
-		// Calculate score (simple weighted sum for demo)
-		score := calculateScore(features)
+		// Calculate score using the ML Engine
+		mlEngine, err := engine.GetEngine()
+		var score float64
+		if err != nil {
+			logger.Printf("Engine init error: %v", err)
+			// Fallback to 0 or handle error appropriately.
+			// For this test API, we'll return 0 and log the error.
+		} else {
+			score = mlEngine.Predict(features)
+		}
 
 		// Build response
 		resp := ScoreResponse{
@@ -147,109 +155,6 @@ func scoreHandler(p parser.Parser, e engine.Vectorizer, logger *log.Logger) http
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	}
-}
-
-// calculateScore computes a credit score from the feature vector.
-// This is a simplified scoring function. In production, this would
-// use an XGBoost model loaded via go:embed or file.
-func calculateScore(features []float64) float64 {
-	if len(features) < 15 {
-		return 0
-	}
-
-	// Feature weights (simplified model)
-	weights := []float64{
-		0.10,  // total_income (positive)
-		-0.05, // total_expenses (negative)
-		0.15,  // net_flow (positive)
-		0.05,  // avg_txn_amount
-		0.02,  // txn_count
-		-0.10, // income_regularity (lower is better)
-		-0.25, // gambling_index (strongly negative)
-		0.05,  // utility_ratio (positive - responsible spending)
-		-0.15, // fuliza_usage (negative)
-		0.10,  // fuliza_repay_rate (positive)
-		-0.02, // p2p_ratio
-		0.05,  // max_single_txn
-		-0.05, // balance_volatility
-		0.05,  // days_active
-		0.02,  // avg_daily_volume
-	}
-
-	var score float64
-	for i, weight := range weights {
-		if i < len(features) {
-			// Normalize feature contribution
-			contribution := weight * normalizeFeature(features[i], i)
-			score += contribution
-		}
-	}
-
-	// Scale to 0-1 range using sigmoid-like function
-	score = 1 / (1 + sigmoid(-score))
-
-	// Clamp to valid range
-	if score < 0 {
-		score = 0
-	}
-	if score > 1 {
-		score = 1
-	}
-
-	return score
-}
-
-// normalizeFeature scales features to comparable ranges.
-func normalizeFeature(value float64, index int) float64 {
-	// Scale factors based on expected ranges for Kenyan transactions
-	scales := []float64{
-		100000, // total_income (up to 100k KES)
-		100000, // total_expenses
-		50000,  // net_flow
-		5000,   // avg_txn_amount
-		100,    // txn_count
-		1,      // income_regularity (already 0-1 scale)
-		1,      // gambling_index (already 0-1 scale)
-		1,      // utility_ratio (already 0-1 scale)
-		1,      // fuliza_usage (already 0-1 scale)
-		1,      // fuliza_repay_rate (already 0-1 scale)
-		1,      // p2p_ratio (already 0-1 scale)
-		50000,  // max_single_txn
-		10000,  // balance_volatility
-		30,     // days_active
-		10000,  // avg_daily_volume
-	}
-
-	if index >= len(scales) || scales[index] == 0 {
-		return value
-	}
-
-	return value / scales[index]
-}
-
-// sigmoid helper function.
-func sigmoid(x float64) float64 {
-	if x > 500 {
-		return 1
-	}
-	if x < -500 {
-		return 0
-	}
-	return 1 / (1 + exp(-x))
-}
-
-// exp is a simple exponential approximation.
-func exp(x float64) float64 {
-	// Use math.Exp via type assertion to avoid import cycle concerns
-	// In production, use math.Exp directly
-	const e = 2.718281828459045
-	result := 1.0
-	term := 1.0
-	for i := 1; i < 20; i++ {
-		term *= x / float64(i)
-		result += term
-	}
-	return result
 }
 
 // writeError sends a JSON error response.

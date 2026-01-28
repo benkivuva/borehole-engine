@@ -13,8 +13,9 @@ export interface ScoreResult {
 export const calculateBoreholeScore = async (logs: string[]): Promise<ScoreResult> => {
   try {
     const jsonLogs = JSON.stringify(logs);
-    const resultJson = await BoreholeModule.calculateScore(jsonLogs);
+    const resultJson = await BoreholeModule.calculateBoreholeScore(jsonLogs);
     return JSON.parse(resultJson);
+
   } catch (error) {
     console.error('Borehole Scoring Error:', error);
     return {
