@@ -20,9 +20,10 @@ Run this command which sets the required environment variables for your system:
 $env:ANDROID_HOME = "C:\Users\ADMIN\AppData\Local\Android\sdk"
 $env:ANDROID_NDK_HOME = "$env:ANDROID_HOME\ndk\26.1.10909125"
 
-# Build the bridge (Explicitly target API 34 for modern Android)
-gomobile bind -v -target=android -androidapi 34 -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
+# Build the bridge (Target API 21 for broad compatibility)
+gomobile bind -v -target=android -androidapi 21 -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
 ```
+
 
 
 

@@ -2,6 +2,23 @@
 
 High-performance Go-based mobile infrastructure for offline credit scoring in Kenya. Parses M-Pesa, Airtel Money, T-Kash, Hustler Fund, and bank SMS messages to generate XGBoost-compatible feature vectors.
 
+## 🧠 Edge ML Inference (New!)
+
+Borehole uses a **Probabilistic XGBoost Inference Engine** running directly on the mobile device (Go-based).
+
+### The Pipeline: From SMS to Score
+
+1.  **Extract (Parser)**: Zero-allocation Regex engine extracts amounts, dates, and types (e.g., M-Pesa, Hustler Fund).
+2.  **Transform (Mapper)**: Transactions are aggregated into a fixed **20-dimensional feature vector** (e.g., *Income*, *GamblingRatio*, *LoanRepaymentRate*).
+3.  **Inference (XGBoost)**: The vector is passed to an embedded Gradient Boosting model (via `dmitryikh/leaves`).
+4.  **Activation (Probability)**: Raw tree margins are squashed via **Sigmoid** to a 0.0-1.0 risk probability.
+
+### Core Features
+*   **Performance**: Zero-allocation inference loop optimized for mobile ARM processors.
+*   **Safety**: Robust fallback mechanism ensures the app never crashes even if the model file is corrupted (defaults to neutral score).
+*   **Privacy**: 100% Offline. No data leaves the device.
+
+
 ## Features
 
 - **Automated SMS Scraping (New)**
@@ -76,16 +93,20 @@ borehole-engine/
 
 | Index | Feature | Description |
 |-------|---------|-------------|
-| 0-2 | Income/Expense/Net | Financial flow metrics |
-| 6 | gambling_index | Betting spend ratio |
-| 8 | fuliza_usage | Fuliza borrowed / income |
-| 15 | hustler_balance | Latest Hustler Fund debt |
-| 16 | okoa_frequency | Okoa Jahazi usage count |
-| 17 | airtel_volume | Total Airtel Money volume |
-| 18 | lender_diversity | Count of unique digital lenders |
-| 19 | emergency_reliance | (Okoa + Fuliza) / Income |
-| 20 | savings_rate | MMF deposits / Income |
-| 21 | bank_activity | Count of bank transactions |
+| 0-5 | Financial Health | Income, Expenses, Profitability, Txn Count, Max Txn, Consistency |
+
+| 6 | `gambling_index` | Betting spend / Total Expenses |
+| 7 | `utility_ratio` | Utility spend / Total Expenses |
+| 8 | `fuliza_usage` | Fuliza borrowed / Income |
+| 9 | `fuliza_repay` | Fuliza repayment rate |
+| 13 | `hustler_balance` | Latest Hustler Fund debt |
+| 14 | `okoa_frequency` | Okoa Jahazi usage count |
+| 15 | `airtel_volume` | Total Airtel Money volume |
+| 16 | `lender_diversity` | Count of unique digital lenders |
+| 17 | `emergency_reliance` | (Okoa + Fuliza) / Income |
+| 18 | `savings_rate` | MMF deposits / Income |
+| 19 | `bank_activity` | Count of bank transactions |
+
 
 ## License
 
