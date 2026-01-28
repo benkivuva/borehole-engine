@@ -49,6 +49,34 @@ curl -X POST http://localhost:8080/v1/score \
   -d '{"logs": ["UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE", "Hustler Fund. You have been disbursed Ksh500.00"]}'
 ```
 
+## Mobile Application (React Native)
+
+The repository includes a complete React Native application in the `MobileApp/` directory that demonstrates the engine in action.
+
+### Key Features
+*   **Encrypted Storage**: Uses **SQLCipher** (AES-256) to store credit score history.
+*   **Android Keystore**: Encryption keys are generated and stored in the hardware-backed Android KeyStore.
+*   **Privacy First**: "Nuke Data" feature securely wipes all local data via `VACUUM`.
+*   **Real-time Dashboard**: Visualizes the 20-dimension feature vector (Cash In vs Out, Debt Ratios).
+
+### Quick Start (Mobile)
+
+Prerequisites: Node.js, Android Studio, Java 17+.
+
+```bash
+# 1. Install Dependencies
+cd MobileApp
+npm install
+
+# 2. Build Go-Mobile Library (If changing engine code)
+cd ..
+gomobile bind -v -target=android -androidapi 21 -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
+
+# 3. Run on Android Emulator
+cd MobileApp
+npm run android
+```
+
 ## Project Structure
 
 ```
@@ -56,12 +84,15 @@ borehole-engine/
 ├── cmd/api/          # API entrypoint
 │   └── main.go       # HTTP server with POST /v1/score
 ├── pkg/
-│   ├── parser/       # SMS parsing
-│   │   ├── parser.go     # Transaction types, ParseLogs()
-│   │   └── patterns.go   # Pre-compiled regex patterns (M-Pesa, Airtel, Hustler, etc.)
-│   └── engine/       # Feature engineering
-│       └── engine.go     # 22-feature Vectorize()
-└── go.mod
+│   ├── parser/       # SMS parsing (Regex patterns)
+│   ├── engine/       # Feature engineering & ML Logic
+│   └── mobile/       # Go-Mobile bindings (JNI Bridge)
+└── MobileApp/        # React Native Application
+    ├── android/      # Native Android project (Gradle)
+    ├── src/
+    │   └── storage/  # Encrypted Database (SQLCipher)
+    ├── App.tsx       # Main UI & Logic
+    └── BoreholeBridge.ts # JS Bridge to Go Engine
 ```
 
 ## API
@@ -73,9 +104,7 @@ borehole-engine/
 {
   "logs": [
     "UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE",
-    "Fuliza M-PESA. You have borrowed Ksh2,000.00",
-    "Transaction ID: AM1234. You have received Ksh1,000 from Jane",
-    "You have received Ksh5,000 from Tala"
+    "Fuliza M-PESA. You have borrowed Ksh2,000.00"
   ]
 }
 ```
@@ -89,16 +118,13 @@ borehole-engine/
 }
 ```
 
-## Feature Vector
-
+## Feature Vector (20 Dimensions)
 | Index | Feature | Description |
 |-------|---------|-------------|
 | 0-5 | Financial Health | Income, Expenses, Profitability, Txn Count, Max Txn, Consistency |
-
 | 6 | `gambling_index` | Betting spend / Total Expenses |
 | 7 | `utility_ratio` | Utility spend / Total Expenses |
-| 8 | `fuliza_usage` | Fuliza borrowed / Income |
-| 9 | `fuliza_repay` | Fuliza repayment rate |
+| 8-9 | `fuliza_stats` | Usage Ratio & Repayment Rate |
 | 13 | `hustler_balance` | Latest Hustler Fund debt |
 | 14 | `okoa_frequency` | Okoa Jahazi usage count |
 | 15 | `airtel_volume` | Total Airtel Money volume |
@@ -107,6 +133,7 @@ borehole-engine/
 | 18 | `savings_rate` | MMF deposits / Income |
 | 19 | `bank_activity` | Count of bank transactions |
 
+https://github.com/benkivuva/borehole-engine
 
 ## License
 
