@@ -14,6 +14,7 @@ import {
     Alert,
     Modal,
     FlatList,
+    Vibration,
 } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 import QRCode from 'react-native-qrcode-svg';
@@ -51,20 +52,24 @@ const DashboardScreen = () => {
 
     const handleVerify = async () => {
         if (!result || !result.score) return;
+        Vibration.vibrate(10);
         setLoading(true);
         const certificate = await generateSignedScore(result.score);
         setCert(certificate);
         setLoading(false);
+        Vibration.vibrate(50);
         setShowVerify(true);
     };
 
     const handleCalculate = async () => {
         if (!logs.trim()) return;
+        Vibration.vibrate(10);
         setLoading(true);
         const logLines = logs.split('\n').filter(line => line.trim().length > 0);
         const scoreResult = await calculateBoreholeScore(logLines);
         setResult(scoreResult);
         if (scoreResult.score) {
+            Vibration.vibrate([0, 50, 50, 50]);
             await Database.saveScore(scoreResult.score, scoreResult.features || []);
         }
         setLoading(false);
@@ -134,6 +139,7 @@ const DashboardScreen = () => {
                 const scoreResult = await calculateBoreholeScore(filteredLogs);
                 setResult(scoreResult);
                 if (scoreResult.score) {
+                    Vibration.vibrate([0, 50, 50, 50]);
                     await Database.saveScore(scoreResult.score, scoreResult.features || []);
                 }
                 setScanning(false);
