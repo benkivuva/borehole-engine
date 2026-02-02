@@ -24,6 +24,13 @@ import QRCode from 'react-native-qrcode-svg';
 import { Database, AuditLog } from '../storage/Database';
 import { calculateBoreholeScore, ScoreResult, generateSignedScore, SignedCertificate } from '../../BoreholeBridge';
 
+// Mock Data for Quick Testing
+const MOCK_PERSONAS = {
+    high_income: "RC9999ZZ Confirmed. You have received Ksh75,000.00 from ELON MUSK on 28/1/26 at 1:00 PM.\nUB1234AB Confirmed. Ksh5,000.00 sent to MOM on 29/1/26.",
+    average: "RC8888AA Confirmed. You have received Ksh15,000.00 from SALARY on 28/1/26.\nFuliza M-PESA. You have borrowed Ksh500.00.",
+    risky: "RC7777BB Confirmed. Ksh5,000.00 sent to BETIKA on 28/1/26.\nFuliza M-PESA. You have borrowed Ksh2,000.00.\nOkoa Jahazi: You have a debt of Ksh50.",
+};
+
 const DashboardScreen = () => {
     const isDarkMode = useColorScheme() === 'dark';
     const [logs, setLogs] = useState('');
@@ -202,6 +209,19 @@ const DashboardScreen = () => {
                         )}
                     </TouchableOpacity>
 
+                    <Text style={[styles.cardTitle, { marginTop: 20 }]}>Quick Test Personas</Text>
+                    <View style={styles.chipRow}>
+                        <TouchableOpacity style={[styles.chip, { backgroundColor: '#10B981' }]} onPress={() => setLogs(MOCK_PERSONAS.high_income)}>
+                            <Text style={styles.chipText}>🤑 Rich</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.chip, { backgroundColor: '#F59E0B' }]} onPress={() => setLogs(MOCK_PERSONAS.average)}>
+                            <Text style={styles.chipText}>😐 Avg</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.chip, { backgroundColor: '#EF4444' }]} onPress={() => setLogs(MOCK_PERSONAS.risky)}>
+                            <Text style={styles.chipText}>🎰 Risky</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <Text style={[styles.cardTitle, { marginTop: 20 }]}>Or Paste Manually</Text>
                     <View style={styles.inputContainer}>
                         <TextInput
@@ -336,25 +356,24 @@ const DashboardScreen = () => {
                             {cert?.signature || 'Generating...'}
                         </Text>
 
-                        {cert?.signature || 'Generating...'}
-                    </Text>
 
-                    <TouchableOpacity
-                        style={styles.shareBtn}
-                        onPress={handleShare}
-                    >
-                        <Text style={styles.shareBtnText}>📤 Share Proof</Text>
-                    </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.closeVerifyBtn}
-                        onPress={() => setShowVerify(false)}
-                    >
-                        <Text style={styles.closeBtnText}>Done</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.shareBtn}
+                            onPress={handleShare}
+                        >
+                            <Text style={styles.shareBtnText}>📤 Share Proof</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.closeVerifyBtn}
+                            onPress={() => setShowVerify(false)}
+                        >
+                            <Text style={styles.closeBtnText}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </Modal>
+            </Modal>
         </SafeAreaView >
     );
 };
@@ -612,6 +631,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    chipRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+    chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+    chipText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 });
 
 export default DashboardScreen;
