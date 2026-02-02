@@ -19,7 +19,8 @@ import SmsAndroid from 'react-native-get-sms-android';
 import { Database, AuditLog } from './src/storage/Database';
 
 
-import { calculateBoreholeScore, ScoreResult } from './BoreholeBridge';
+import QRCode from 'react-native-qrcode-svg';
+import { calculateBoreholeScore, ScoreResult, generateSignedScore, SignedCertificate } from './BoreholeBridge';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -29,6 +30,8 @@ const App = () => {
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [history, setHistory] = useState<AuditLog[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showVerify, setShowVerify] = useState(false);
+  const [cert, setCert] = useState<SignedCertificate | null>(null);
 
   const loadHistory = async () => {
     const data = await Database.getHistory();
@@ -39,12 +42,21 @@ const App = () => {
   const nukeHistory = async () => {
     await Database.nukeData();
     setHistory([]);
-    setResult(null); // Clear dashboard
-    setLogs('');     // Clear input
-    setShowHistory(false); // Close modal
+    setResult(null);
+    setLogs('');
+    setCert(null);
+    setShowHistory(false);
     Alert.alert('System Reset', 'Local database and dashboard cleared.');
   };
 
+  const handleVerify = async () => {
+    if (!result || !result.score) return;
+    setLoading(true);
+    const certificate = await generateSignedScore(result.score);
+    setCert(certificate);
+    setLoading(false);
+    setShowVerify(true);
+  };
 
   const handleCalculate = async () => {
     if (!logs.trim()) return;
@@ -233,6 +245,10 @@ const App = () => {
               </View>
             </View>
 
+            <TouchableOpacity style={styles.verifyBtn} onPress={handleVerify}>
+              <Text style={styles.verifyBtnText}>🔐 Prove This Score (QR)</Text>
+            </TouchableOpacity>
+
             {result.error && (
               <Text style={styles.errorText}>Error: {result.error}</Text>
             )}
@@ -281,6 +297,35 @@ const App = () => {
             <Text style={styles.nukeBtnText}>☢️ NUKE DATA</Text>
           </TouchableOpacity>
         </SafeAreaView>
+      </Modal>
+
+      <Modal visible={showVerify} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Verifiable Claim</Text>
+            <Text style={styles.modalSubtitle}>Scan to verify authenticity</Text>
+
+            <View style={styles.qrContainer}>
+              {cert?.signature ? (
+                <QRCode value={JSON.stringify(cert)} size={200} />
+              ) : (
+                <ActivityIndicator />
+              )}
+            </View>
+
+            <Text style={styles.certLabel}>Ed25519 Signature:</Text>
+            <Text style={styles.certHash} numberOfLines={2}>
+              {cert?.signature || 'Generating...'}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.closeVerifyBtn}
+              onPress={() => setShowVerify(false)}
+            >
+              <Text style={styles.closeBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -499,6 +544,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nukeBtnText: { color: '#fff', fontWeight: '800' },
+  verifyBtn: {
+    marginTop: 20,
+    backgroundColor: '#334155',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  verifyBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A', marginBottom: 5 },
+  modalSubtitle: { fontSize: 14, color: '#64748B', marginBottom: 20 },
+  qrContainer: { padding: 20, backgroundColor: '#fff', borderRadius: 10, elevation: 5 },
+  certLabel: { marginTop: 20, fontSize: 10, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
+  certHash: { fontSize: 10, color: '#334155', textAlign: 'center', marginTop: 5, fontFamily: 'monospace' },
+  closeVerifyBtn: { marginTop: 30, padding: 10 },
 });
 
 export default App;

@@ -6,7 +6,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Promise;
 
 // Import the Go-generated package (this will resolving after successful gomobile bind)
-import mobile.Mobile; 
+import mobile.Mobile;
 import mobile.MobileEngine;
 
 public class BoreholeModule extends ReactContextBaseJavaModule {
@@ -32,6 +32,16 @@ public class BoreholeModule extends ReactContextBaseJavaModule {
             promise.resolve(result);
         } catch (Exception e) {
             promise.reject("ERR_SCORE", e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void generateSignedScore(double score, Promise promise) {
+        try {
+            String result = engine.generateSignedScore(score);
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("ERR_SIGN", e.getMessage());
         }
     }
 }

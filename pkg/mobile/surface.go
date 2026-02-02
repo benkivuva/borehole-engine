@@ -58,3 +58,27 @@ func (m *MobileEngine) CalculateBoreholeScore(jsonLogs string) string {
 	resBytes, _ := json.Marshal(result)
 	return string(resBytes)
 }
+
+// GenerateSignedScore creates a verifiable certificate for a given score.
+// Returns a JSON string containing {payload, signature, public_key}.
+func (m *MobileEngine) GenerateSignedScore(score float64) string {
+	sec := engine.GetSecurityModule()
+
+	// For MVP, we use a random Anonymous ID.
+	// In production, this would be a hash of the device ID or user ID.
+	uid := "anon_user_xyz"
+
+	payloadStr, signature, err := sec.IssueCertificate(score, uid)
+	if err != nil {
+		return fmt.Sprintf(`{"error": "signing_failed", "details": "%v"}`, err)
+	}
+
+	response := map[string]string{
+		"payload":    payloadStr,
+		"signature":  signature,
+		"public_key": sec.GetPublicKeyBase64(),
+	}
+
+	bytes, _ := json.Marshal(response)
+	return string(bytes)
+}

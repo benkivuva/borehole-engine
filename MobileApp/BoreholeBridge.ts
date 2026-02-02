@@ -27,4 +27,26 @@ export const calculateBoreholeScore = async (logs: string[]): Promise<ScoreResul
   }
 };
 
+export interface SignedCertificate {
+  payload: string;
+  signature: string;
+  public_key: string;
+  error?: string;
+}
+
+export const generateSignedScore = async (score: number): Promise<SignedCertificate> => {
+  try {
+    const resultJson = await BoreholeModule.generateSignedScore(score);
+    return JSON.parse(resultJson);
+  } catch (error) {
+    console.error('Signing Error:', error);
+    return {
+      payload: '',
+      signature: '',
+      public_key: '',
+      error: 'Signing failed',
+    };
+  }
+};
+
 export default BoreholeModule;
