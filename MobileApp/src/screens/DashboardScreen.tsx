@@ -15,6 +15,7 @@ import {
     Modal,
     FlatList,
     Vibration,
+    Share,
 } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 import QRCode from 'react-native-qrcode-svg';
@@ -59,6 +60,17 @@ const DashboardScreen = () => {
         setLoading(false);
         Vibration.vibrate(50);
         setShowVerify(true);
+    };
+
+    const handleShare = async () => {
+        if (!cert) return;
+        try {
+            await Share.share({
+                message: `🔒 Verified Borehole Score: ${((result?.score || 0) * 1000).toFixed(0)}\n\nSignature:\n${cert.signature}\n\nVerify at: https://borehole.fi`,
+            });
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleCalculate = async () => {
@@ -324,16 +336,26 @@ const DashboardScreen = () => {
                             {cert?.signature || 'Generating...'}
                         </Text>
 
-                        <TouchableOpacity
-                            style={styles.closeVerifyBtn}
-                            onPress={() => setShowVerify(false)}
-                        >
-                            <Text style={styles.closeBtnText}>Done</Text>
-                        </TouchableOpacity>
-                    </View>
+                        {cert?.signature || 'Generating...'}
+                    </Text>
+
+                    <TouchableOpacity
+                        style={styles.shareBtn}
+                        onPress={handleShare}
+                    >
+                        <Text style={styles.shareBtnText}>📤 Share Proof</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.closeVerifyBtn}
+                        onPress={() => setShowVerify(false)}
+                    >
+                        <Text style={styles.closeBtnText}>Done</Text>
+                    </TouchableOpacity>
                 </View>
-            </Modal>
-        </SafeAreaView>
+            </View>
+        </Modal>
+        </SafeAreaView >
     );
 };
 
@@ -579,7 +601,17 @@ const styles = StyleSheet.create({
     qrContainer: { padding: 20, backgroundColor: '#fff', borderRadius: 10, elevation: 5 },
     certLabel: { marginTop: 20, fontSize: 10, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
     certHash: { fontSize: 10, color: '#334155', textAlign: 'center', marginTop: 5, fontFamily: 'monospace' },
-    closeVerifyBtn: { marginTop: 30, padding: 10 },
+    closeVerifyBtn: { marginTop: 10, padding: 10 },
+    shareBtn: {
+        marginTop: 20,
+        backgroundColor: '#10B981',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 24,
+        width: '100%',
+        alignItems: 'center',
+    },
+    shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });
 
 export default DashboardScreen;
