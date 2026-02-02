@@ -1,140 +1,110 @@
-# Borehole Edge-Scoring Engine
+# Borehole Edge-Scoring Engine 🛡️📱
 
-High-performance Go-based mobile infrastructure for offline credit scoring in Kenya. Parses M-Pesa, Airtel Money, T-Kash, Hustler Fund, and bank SMS messages to generate XGBoost-compatible feature vectors.
+[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![React Native](https://img.shields.io/badge/React_Native-0.73-61DAFB?style=flat&logo=react)](https://reactnative.dev/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25_Offline-green)](README.md)
 
-## 🧠 Edge ML Inference (New!)
+**Borehole** is a decentralized, privacy-first financial infrastructure that enables **offline credit scoring** for the unbanked in emerging markets. 
 
-Borehole uses a **Probabilistic XGBoost Inference Engine** running directly on the mobile device (Go-based).
+It parses unstructured financial SMS logs (M-Pesa, Airtel Money, Banks) directly on the user's device, generates a 20-dimensional risk vector, and calculates a credit score using an embedded **Go-based Inference Engine**.
 
-### The Pipeline: From SMS to Score
+Most importantly, it generates **Cryptographically Verifiable Claims** (Ed25519), allowing users to prove their creditworthiness to lenders without revealing their raw transaction history.
 
-1.  **Extract (Parser)**: Zero-allocation Regex engine extracts amounts, dates, and types (e.g., M-Pesa, Hustler Fund).
-2.  **Transform (Mapper)**: Transactions are aggregated into a fixed **20-dimensional feature vector** (e.g., *Income*, *GamblingRatio*, *LoanRepaymentRate*).
-3.  **Inference (XGBoost)**: The vector is passed to an embedded Gradient Boosting model (via `dmitryikh/leaves`).
-4.  **Activation (Probability)**: Raw tree margins are squashed via **Sigmoid** to a 0.0-1.0 risk probability.
+---
 
-### Core Features
-*   **Performance**: Zero-allocation inference loop optimized for mobile ARM processors.
-*   **Safety**: Robust fallback mechanism ensures the app never crashes even if the model file is corrupted (defaults to neutral score).
-*   **Privacy**: 100% Offline. No data leaves the device.
+## 🌟 Key Features
 
+### 🧠 Edge ML Inference
+*   **Zero-Latency**: 100% On-device scoring using a compiled decision tree engine.
+*   **Privacy-Preserving**: Raw SMS logs never leave the phone.
+*   **Robust**: Hardcoded logic guarantees stability even in unstable environments.
 
-## Features
+### 🔐 Digital Trust (New!)
+*   **Ed25519 Signing**: Every score is cryptographically signed by the engine.
+*   **QR Verification**: Users can share a QR code containing their *Verified Score* and *Signature*. Lenders can verify authenticity offline.
+*   **Anonymous**: The verifying lender sees the score, not the bank statements.
 
-- **Automated SMS Scraping (New)**
-  - One-tap financial health scan directly from Android inbox.
-  - Smart keyword filtering (Confirmed, M-PESA, Airtel, HustlerFund, etc.).
-- **Multi-Provider SMS Parsing**
-  - **Mobile Money**: M-Pesa (Supports any alphanumeric series), Airtel Money, T-Kash
-  - **Credit Products**: Fuliza, Hustler Fund (Advanced repayment detection), Okoa Jahazi (Debt snapshotting)
-  - **Digital Lenders**: Tala, Branch, Zenka, Zash, Okolea
-  - **Savings & Banking**: M-Shwari, KCB M-Pesa, Mali, Stawi, Bank Transfers (Equity, KCB, Co-op, NCBA)
-- **22-Feature Vector** - Financial health, lender diversity, emergency reliance, savings rate
-- **Local-Only Processing** - 100% offline, privacy-first engine. No SMS logs ever leave the device.
-- **Go 1.25+ Infrastructure** - Zero-allocation techniques and high-performance routing.
+### 💼 Financial Infrastructure
+*   **Universal Parser**: Supports M-Pesa, Airtel, T-Kash, Hustler Fund, Fuliza, and major banks.
+*   **Encrypted Vault**: History is stored in a refined SQLCipher database (AES-256), protected by the Android Keystore.
+*   **Feature Vector**: Extracts 20+ signals including *Gambling Ratio*, *Emergency Loan Reliance*, and *Community Lending Diversity*.
 
+---
 
-## Quick Start
+## 🏗️ Architecture
 
-```bash
-# Build
-go build ./...
-
-# Run API server
-go run cmd/api/main.go
-
-# Test scoring endpoint
-curl -X POST http://localhost:8080/v1/score \
-  -H "Content-Type: application/json" \
-  -d '{"logs": ["UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE", "Hustler Fund. You have been disbursed Ksh500.00"]}'
+```mermaid
+graph TD
+    SMS[Raw SMS Logs] -->|Regex Parser| Vector[Feature Vector (20D)]
+    Vector -->|Go Engine| Score[Credit Probability]
+    Score -->|Security Module| Signed[Ed25519 Signed Certificate]
+    Signed -->|App Bridge| UI[React Native Dashboard]
+    UI -->|AES-256| DB[(Encrypted SQLCipher)]
+    UI -->|QR Code| Lender[Digital Verification]
 ```
 
-## Mobile Application (React Native)
+---
 
-The repository includes a complete React Native application in the `MobileApp/` directory that demonstrates the engine in action.
+## 🚀 Quick Start
 
-### Key Features
-*   **Encrypted Storage**: Uses **SQLCipher** (AES-256) to store credit score history.
-*   **Android Keystore**: Encryption keys are generated and stored in the hardware-backed Android KeyStore.
-*   **Privacy First**: "Nuke Data" feature securely wipes all local data via `VACUUM`.
-*   **Real-time Dashboard**: Visualizes the 20-dimension feature vector (Cash In vs Out, Debt Ratios).
+### Prerequisites
+*   **Go** 1.20+
+*   **Node.js** 18+
+*   **Android Studio** (with NDK)
 
-### Quick Start (Mobile)
+### 1. Build the Engine (Backend/Test)
+```bash
+go build ./...
+go test ./pkg/...
+```
 
-Prerequisites: Node.js, Android Studio, Java 17+.
+### 2. Run the Mobile App
+The mobile app includes the compiled Go engine as a native library.
 
 ```bash
-# 1. Install Dependencies
+# Install JS dependencies
 cd MobileApp
 npm install
 
-# 2. Build Go-Mobile Library (If changing engine code)
+# (Optional) Recompile the Go Engine Native Library
 cd ..
 gomobile bind -v -target=android -androidapi 21 -o MobileApp/android/app/libs/borehole.aar ./pkg/mobile
 
-# 3. Run on Android Emulator
+# Launch on Android Emulator
 cd MobileApp
 npm run android
 ```
 
-## Project Structure
+### 3. Simulating Transactions
+Use `adb` to inject fake M-Pesa SMS messages into the emulator to test the scoring logic.
 
-```
-borehole-engine/
-├── cmd/api/          # API entrypoint
-│   └── main.go       # HTTP server with POST /v1/score
-├── pkg/
-│   ├── parser/       # SMS parsing (Regex patterns)
-│   ├── engine/       # Feature engineering & ML Logic
-│   └── mobile/       # Go-Mobile bindings (JNI Bridge)
-└── MobileApp/        # React Native Application
-    ├── android/      # Native Android project (Gradle)
-    ├── src/
-    │   └── storage/  # Encrypted Database (SQLCipher)
-    ├── App.tsx       # Main UI & Logic
-    └── BoreholeBridge.ts # JS Bridge to Go Engine
+```powershell
+# Simulate a large deposit (High Income Signal)
+adb emu sms send M-PESA "RC9999ZZ Confirmed. You have received Ksh75,000.00 from ELON MUSK on 28/1/26 at 1:00 PM."
 ```
 
-## API
+---
 
-### `POST /v1/score`
+## 📊 Feature Vector Specifications
 
-**Request:**
-```json
-{
-  "logs": [
-    "UA1234ABCD Confirmed. You have received Ksh1,500.00 from JOHN DOE",
-    "Fuliza M-PESA. You have borrowed Ksh2,000.00"
-  ]
-}
-```
+| Index | Feature Family | Description |
+|-------|----------------|-------------|
+| 0-5   | **Cash Flow**  | Income, Expenses, Net Flow, Txn Frequency, Max Txn Size |
+| 6-7   | **Risk Flags** | Gambling Index (% of spend), Utility Payments Ratio |
+| 8-9   | **Liquidity**  | Fuliza (Overdraft) Usage & Repayment Rate |
+| 13-17 | **Ecosystem**  | Hustler Fund, Okoa Jahazi, Airtel Money Volume, Lender Diversity |
+| 18-19 | **Stability**  | Savings Rate (MMF/M-Shwari), Banking Activity |
 
-**Response:**
-```json
-{
-  "score": 0.72,
-  "features": [2500, 0, 2500, ...],
-  "txn_count": 4
-}
-```
+---
 
-## Feature Vector (20 Dimensions)
-| Index | Feature | Description |
-|-------|---------|-------------|
-| 0-5 | Financial Health | Income, Expenses, Profitability, Txn Count, Max Txn, Consistency |
-| 6 | `gambling_index` | Betting spend / Total Expenses |
-| 7 | `utility_ratio` | Utility spend / Total Expenses |
-| 8-9 | `fuliza_stats` | Usage Ratio & Repayment Rate |
-| 13 | `hustler_balance` | Latest Hustler Fund debt |
-| 14 | `okoa_frequency` | Okoa Jahazi usage count |
-| 15 | `airtel_volume` | Total Airtel Money volume |
-| 16 | `lender_diversity` | Count of unique digital lenders |
-| 17 | `emergency_reliance` | (Okoa + Fuliza) / Income |
-| 18 | `savings_rate` | MMF deposits / Income |
-| 19 | `bank_activity` | Count of bank transactions |
+## 🛡️ Security Model
 
-https://github.com/benkivuva/borehole-engine
+1.  **Input Integrity**: The engine only accepts system-level SMS broadcasts (on supported devices) or user-pasted verify-copy.
+2.  **Execution Integrity**: The scoring logic is compiled native code, making it resistant to simple runtime tampering.
+3.  **Storage Confidentiality**: All persistence is handled by `react-native-sqlite-storage` with **SQLCipher**, keyed by the hardware-backed **Android Keystore**.
+
+---
 
 ## License
-
-MIT
+MIT License. Open Infrastructure for Financial Inclusion.
